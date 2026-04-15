@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smily Menu - Collapsible Navigation Drawer</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gray-50: #f6f7f9;
+      --gray-100: #ecedf2;
+      --gray-200: #d4d8e3;
+      --gray-300: #aeb6cb;
+      --gray-400: #828fae;
+      --gray-500: #627093;
+      --gray-600: #4e5a7b;
+      --gray-700: #404964;
+      --gray-800: #383f54;
+      --gray-900: #323748;
+      --gray-950: #212430;
+      --teal: #1dc8ca;
+      --teal-600: #04969d;
+      --teal-700: #08767d;
+      --teal-800: #0c5c63;
+      --border-color: #e3e4e7;
+      --sidebar-collapsed: 56px;
+      --sidebar-expanded: 240px;
+      --nav-item-height: 50px;
+      --icon-size: 24px;
+      --transition-smooth: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-fast: 0.15s ease;
+      --flyout-width: 190px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Open Sans', sans-serif;
+      background: var(--gray-50);
+      display: flex;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ═══════════════════════════════════════════
+       Sidebar container (holds sidebar + flyouts)
+       ═══════════════════════════════════════════ */
+    .sidebar-container {
+      position: fixed;
+      top: 0; left: 0;
+      height: 100vh;
+      z-index: 1000;
+      display: flex;
+      flex-direction: row;
+    }
+
+    /* ═══════════════════════════════════════════
+       Sidebar
+       ═══════════════════════════════════════════ */
+    .sidebar {
+      width: var(--sidebar-collapsed);
+      height: 100%;
+      background: #fff;
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      transition: width var(--transition-smooth);
+      overflow: visible;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    /* Inner wrapper to clip nav text overflow but allow pin + dropdown to escape */
+    .sidebar-inner {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .sidebar.expanded {
+      width: var(--sidebar-expanded);
+      box-shadow: 4px 0 20px rgba(0, 0, 0, 0.06);
+    }
+
+    .sidebar.pinned {
+      box-shadow: none;
+    }
+
+    /* ═══════════════════════════════════════════
+       Sidebar header
+       Collapsed: Smily wave icon only (centered)
+       Expanded:  wave icon + "Conciergerie" + ▼ + pin
+       ═══════════════════════════════════════════ */
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      min-height: 56px;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--border-color);
+      flex-shrink: 0;
+      position: relative;
+      gap: 10px;
+    }
+
+    /* Smily wave logo: always visible */
+    .sidebar-logo {
+      width: var(--icon-size);
+      min-width: var(--icon-size);
+      height: var(--icon-size);
+      flex-shrink: 0;
+    }
+
+    .sidebar-logo svg { width: 100%; height: 100%; }
+
+    /* Account area (name + chevron): only when expanded */
+    .sidebar-account {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      min-width: 0;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition-smooth);
+    }
+
+    .sidebar.expanded .sidebar-account {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .sidebar-account-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--teal-600);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 120px;
+    }
+
+    .sidebar-account-chevron {
+      color: var(--gray-300);
+      font-size: 12px;
+      flex-shrink: 0;
+      transition: transform 0.2s ease;
+    }
+
+    .sidebar-account.dropdown-open .sidebar-account-chevron { transform: rotate(180deg); }
+
+    /* Pin is now a floating circle outside the sidebar */
+
+    /* Account dropdown - positioned in sidebar-container to escape overflow */
+    .account-dropdown {
+      position: absolute;
+      top: 72px;
+      left: 0;
+      width: var(--sidebar-expanded);
+      background: #fff;
+      border: 1px solid var(--border-color);
+      border-radius: 0 0 8px 8px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      z-index: 1100;
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: max-height 0.25s ease, opacity 0.2s ease;
+    }
+
+    .account-dropdown.open {
+      max-height: 300px;
+      opacity: 1;
+    }
+
+    .account-dropdown-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      gap: 12px;
+      cursor: pointer;
+      transition: background var(--transition-fast);
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      font-family: 'Open Sans', sans-serif;
+    }
+
+    .account-dropdown-item:hover { background: var(--gray-100); }
+
+    .account-dropdown-item.active { background: var(--gray-50); }
+
+    .account-dropdown-icon {
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    .account-dropdown-text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .account-dropdown-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gray-800);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .account-dropdown-id {
+      font-size: 11px;
+      color: var(--gray-400);
+    }
+
+    .account-dropdown-check {
+      color: var(--teal-600);
+      font-size: 14px;
+    }
+
+    /* ═══════════════════════════════════════════
+       Nav scroll area
+       ═══════════════════════════════════════════ */
+    .sidebar-nav {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: thin;
+      scrollbar-color: var(--gray-200) transparent;
+    }
+
+    .nav-list { list-style: none; padding: 0; margin: 0; }
+
+    /* ═══════════════════════════════════════════
+       Nav items (Figma: 240x50, pad 16/12, gap 16)
+       ═══════════════════════════════════════════ */
+    .nav-item { position: relative; }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      height: var(--nav-item-height);
+      padding: 12px 16px;
+      gap: 16px;
+      color: var(--gray-600);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: background var(--transition-fast), color var(--transition-fast);
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+    }
+
+    .nav-link:hover { background: var(--gray-100); color: var(--gray-700); }
+    .nav-link.active { background: var(--gray-100); color: var(--teal-700); }
+
+    .nav-link-icon {
+      width: var(--icon-size);
+      min-width: var(--icon-size);
+      height: var(--icon-size);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: var(--gray-400);
+      transition: color var(--transition-fast);
+    }
+
+    .nav-link:hover .nav-link-icon { color: var(--gray-500); }
+    .nav-link.active .nav-link-icon { color: var(--teal); }
+
+    .nav-link-text {
+      flex: 1;
+      opacity: 0;
+      transition: opacity var(--transition-smooth);
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sidebar.expanded .nav-link-text { opacity: 1; }
+
+    .nav-link-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      opacity: 0;
+      transition: opacity var(--transition-smooth);
+    }
+
+    .sidebar.expanded .nav-link-meta { opacity: 1; }
+
+    .nav-link-chevron {
+      font-size: 12px;
+      color: var(--gray-300);
+      transition: color var(--transition-fast);
+    }
+
+    .nav-link:hover .nav-link-chevron { color: var(--gray-400); }
+    .nav-link.active .nav-link-chevron { color: var(--teal-600); }
+
+    .nav-badge {
+      background: var(--teal-700);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 0 6px;
+      min-width: 19px;
+      height: 19px;
+      line-height: 19px;
+      border-radius: 50px;
+      text-align: center;
+    }
+
+    .nav-badge-dot {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--teal-700);
+      border: 2px solid #fff;
+      transition: opacity var(--transition-smooth);
+    }
+
+    .sidebar.expanded .nav-badge-dot { opacity: 0; }
+
+    .nav-badge-new {
+      background: #ff27d7;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+    }
+
+    /* ═══════════════════════════════════════════
+       Tooltip (collapsed hover)
+       ═══════════════════════════════════════════ */
+    .nav-link[data-tooltip]::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      left: calc(var(--sidebar-collapsed) + 8px);
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--gray-900);
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity var(--transition-fast);
+      z-index: 1100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .sidebar:not(.expanded) .nav-link:hover[data-tooltip]::after { opacity: 1; }
+    .sidebar.expanded .nav-link[data-tooltip]::after { display: none; }
+
+    /* ═══════════════════════════════════════════
+       Footer
+       ═══════════════════════════════════════════ */
+    .sidebar-footer {
+      border-top: 1px solid var(--border-color);
+      flex-shrink: 0;
+    }
+
+    .sidebar-user {
+      display: flex;
+      align-items: center;
+      height: 40px;
+      padding: 10px 16px;
+      gap: 16px;
+      overflow: hidden;
+    }
+
+    .sidebar-user-avatar {
+      width: var(--icon-size);
+      min-width: var(--icon-size);
+      height: var(--icon-size);
+      border-radius: 50%;
+      background: var(--teal-600);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .sidebar-user-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: #475467;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity var(--transition-smooth);
+    }
+
+    .sidebar.expanded .sidebar-user-name { opacity: 1; }
+
+    /* ═══════════════════════════════════════════
+       Pin button (Figma: 40x40 circle at sidebar edge)
+       - Shows on hover when NOT pinned
+       - Always visible when pinned
+       - arrow-right-from-line → pinned: rotate 180
+       ═══════════════════════════════════════════ */
+    /* Pin button: floating circle at the right edge of sidebar,
+       below the header (Figma: 40x40, between header and first item) */
+    .pin-btn {
+      position: absolute;
+      top: 70px;
+      z-index: 1002;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #fff;
+      border: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition-smooth), left var(--transition-smooth), background var(--transition-fast), box-shadow var(--transition-fast);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      /* Position: right edge of collapsed sidebar */
+      left: calc(var(--sidebar-collapsed) - 20px);
+    }
+
+    .pin-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .sidebar.expanded ~ .pin-btn {
+      left: calc(var(--sidebar-expanded) - 20px);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .pin-btn:hover {
+      background: var(--gray-50);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    }
+
+    .sidebar.pinned ~ .pin-btn {
+      left: calc(var(--sidebar-expanded) - 20px);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Flip SVG arrow when pinned */
+    .sidebar.pinned ~ .pin-btn svg {
+      transform: rotate(180deg);
+    }
+
+    /* ═══════════════════════════════════════════
+       Flyout submenu panels (open to the RIGHT)
+       Each panel is a column adjacent to the sidebar
+       ═══════════════════════════════════════════ */
+    .flyout-panel {
+      width: 0;
+      height: 100%;
+      background: #fff;
+      border-right: 1px solid var(--border-color);
+      overflow: hidden;
+      transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .flyout-panel.open {
+      width: var(--flyout-width);
+    }
+
+    .flyout-header {
+      padding: 16px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--teal-600);
+      border-bottom: 1px solid var(--border-color);
+      white-space: nowrap;
+      min-height: var(--nav-item-height);
+      display: flex;
+      align-items: center;
+    }
+
+    .flyout-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 0;
+    }
+
+    .flyout-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 42px;
+      padding: 0 16px;
+      color: var(--gray-600);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: background var(--transition-fast), color var(--transition-fast);
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+    }
+
+    .flyout-link:hover { background: var(--gray-100); color: var(--gray-700); }
+    .flyout-link.active { color: var(--teal-700); background: var(--gray-100); }
+
+    .flyout-link-chevron {
+      font-size: 11px;
+      color: var(--gray-300);
+    }
+
+    .flyout-link.active .flyout-link-chevron { color: var(--teal-600); }
+
+    /* Shadow overlay when flyouts are open */
+    .sidebar-shadow {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.08);
+      z-index: 999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .sidebar-shadow.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* ═══════════════════════════════════════════
+       Top navigation bar
+       ═══════════════════════════════════════════ */
+    .topbar {
+      position: fixed;
+      top: 0;
+      left: var(--sidebar-collapsed);
+      right: 0;
+      height: 72px;
+      background: #fff;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px;
+      z-index: 998;
+      transition: left var(--transition-smooth);
+    }
+
+    body.sidebar-expanded .topbar { left: var(--sidebar-expanded); }
+
+    .topbar-breadcrumbs {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--gray-600);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .topbar-breadcrumbs i { font-size: 16px; color: var(--gray-400); }
+
+    .topbar-btn-primary {
+      background: var(--teal-600);
+      color: #fff;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      font-family: 'Open Sans', sans-serif;
+    }
+
+    .topbar-btn-primary:hover { background: var(--teal-700); }
+
+    /* ═══════════════════════════════════════════
+       Main content
+       ═══════════════════════════════════════════ */
+    .main-content {
+      margin-left: var(--sidebar-collapsed);
+      margin-top: 72px;
+      flex: 1;
+      padding: 32px 40px;
+      transition: margin-left var(--transition-smooth);
+    }
+
+    body.sidebar-expanded .main-content { margin-left: var(--sidebar-expanded); }
+
+    .main-content h1 {
+      color: var(--gray-900);
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .main-content p {
+      color: var(--gray-500);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .main-content code {
+      background: var(--gray-100);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+      color: var(--teal-700);
+    }
+  </style>
+</head>
+<body>
+
+<!-- Shadow overlay for flyout panels -->
+<div class="sidebar-shadow" id="sidebarShadow"></div>
+
+<!-- Sidebar container (sidebar + flyout panels) -->
+<div class="sidebar-container" id="sidebarContainer">
+
+  <!-- Main sidebar -->
+  <nav class="sidebar" id="sidebar">
+   <div class="sidebar-inner">
+
+    <!-- Header: wave logo always / account+pin when expanded -->
+    <div class="sidebar-header">
+      <!-- Smily wave logo: always visible -->
+      <div class="sidebar-logo">
+        <svg viewBox="0 0 26 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M1 8c3-5 6.5-5 9.5-1.5S17 9 20 5.5c1.5-1.8 3.2-3 5-3.5" stroke="#04969d" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+          <path d="M1 16c3-5 6.5-5 9.5-1.5S17 17 20 13.5c1.5-1.8 3.2-3 5-3.5" stroke="#04969d" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.45"/>
+        </svg>
+      </div>
+
+      <!-- Account name + chevron: only when expanded -->
+      <div class="sidebar-account" id="accountToggle">
+        <div class="sidebar-account-name" id="currentAccountName">Conciergerie</div>
+        <i class="fa-solid fa-chevron-down sidebar-account-chevron"></i>
+      </div>
+
+    </div>
+
+    <!-- Main menu items -->
+    <div class="sidebar-nav">
+      <ul class="nav-list" id="navList"></ul>
+    </div>
+
+    <!-- Footer items + user -->
+    <div class="sidebar-footer">
+      <ul class="nav-list" id="footerList"></ul>
+      <div class="sidebar-user">
+        <div class="sidebar-user-avatar">FL</div>
+        <span class="sidebar-user-name">User name</span>
+      </div>
+    </div>
+   </div><!-- /sidebar-inner -->
+  </nav>
+
+  <!-- Pin button: floating circle at sidebar edge (|→ icon as SVG) -->
+  <button class="pin-btn" id="pinBtn" title="Pin sidebar open">
+    <svg viewBox="0 0 20 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <line x1="1" y1="1" x2="1" y2="15" stroke="#04969d" stroke-width="2" stroke-linecap="round"/>
+      <path d="M7 8h10M13 4l4 4-4 4" stroke="#04969d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+
+  <!-- Account dropdown (outside sidebar to avoid overflow clip) -->
+  <div class="account-dropdown" id="accountDropdown"></div>
+
+  <!-- Flyout panel level 2 -->
+  <div class="flyout-panel" id="flyoutL2">
+    <div class="flyout-header" id="flyoutL2Header"></div>
+    <div class="flyout-body" id="flyoutL2Body"></div>
+  </div>
+
+  <!-- Flyout panel level 3 -->
+  <div class="flyout-panel" id="flyoutL3">
+    <div class="flyout-header" id="flyoutL3Header"></div>
+    <div class="flyout-body" id="flyoutL3Body"></div>
+  </div>
+
+</div>
+
+<!-- Top bar -->
+<div class="topbar" id="topbar">
+  <div class="topbar-breadcrumbs">
+    <i class="fa-solid fa-house"></i>
+    <span>Bookings</span>
+  </div>
+  <div class="topbar-actions">
+    <button class="topbar-btn-primary">
+      <i class="fa-solid fa-plus"></i> Primary CTA
+    </button>
+  </div>
+</div>
+
+<!-- Main content -->
+<div class="main-content" id="mainContent">
+  <h1>Dashboard</h1>
+  <p>
+    <strong>Collapsed by default</strong> &mdash; only icons visible (56px).<br>
+    <strong>Hover</strong> to expand to 240px. <strong>Mouse out</strong> collapses after 800ms.<br>
+    Click the <code>pin</code> button (circle on the right edge) to lock it open.<br>
+    <strong>Submenus</strong> open as flyout panels to the right (click items with <code>&gt;</code>).<br>
+    Click <strong>Conciergerie</strong> to switch accounts.
+  </p>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   Menu configuration
+   ═══════════════════════════════════════════════════════ */
+const MENU_ITEMS = [
+  { id: 'dashboard',   label: 'Dashboard',   icon: 'fa-solid fa-list-check' },
+  { id: 'inbox',       label: 'Inbox',       icon: 'fa-regular fa-envelope' },
+  { id: 'tasks',       label: 'Tasks',       icon: 'fa-regular fa-square-check' },
+
+  // 2 sublevels (children open as flyout panel to the right)
+  { id: 'calendar', label: 'Calendar', icon: 'fa-regular fa-calendar', children: [
+    { id: 'cal-day',   label: 'Day view' },
+    { id: 'cal-month', label: 'Month view' },
+  ]},
+
+  { id: 'bookings',    label: 'Bookings',    icon: 'fa-solid fa-book-open' },
+  { id: 'clients',     label: 'Clients',     icon: 'fa-solid fa-user-group', badge: '99+' },
+  { id: 'rentals',     label: 'Rentals',     icon: 'fa-solid fa-house' },
+  { id: 'rate-tables', label: 'Rate tables', icon: 'fa-regular fa-rectangle-list' },
+  { id: 'discounts',   label: 'Discounts',   icon: 'fa-solid fa-tag' },
+  { id: 'inquiries',   label: 'Inquiries',   icon: 'fa-regular fa-envelope-open' },
+
+  // 3 sublevels
+  { id: 'reviews', label: 'Reviews', icon: 'fa-regular fa-star', children: [
+    { id: 'rev-guest',   label: 'Guest reviews' },
+    { id: 'rev-host',    label: 'Host reviews' },
+    { id: 'rev-pending', label: 'Pending' },
+  ]},
+
+  { id: 'performance', label: 'Performance', icon: 'fa-solid fa-chart-line' },
+
+  // 4 sublevels
+  { id: 'finance', label: 'Finance', icon: 'fa-solid fa-hand-holding-dollar', children: [
+    { id: 'fin-overview', label: 'Overview' },
+    { id: 'fin-payments', label: 'Payments' },
+    { id: 'fin-invoices', label: 'Invoices' },
+    { id: 'fin-reports',  label: 'Reports' },
+  ]},
+
+  { id: 'apps', label: 'Apps', icon: 'fa-solid fa-table-cells' },
+];
+
+const FOOTER_ITEMS = [
+  { id: 'whats-new', label: "What's new?", icon: 'fa-solid fa-bullhorn' },
+  { id: 'help',      label: 'Help',        icon: 'fa-regular fa-circle-question' },
+
+  // With nested sub-level 2 + sub-level 3
+  { id: 'settings', label: 'Settings', icon: 'fa-solid fa-gear', children: [
+    { id: 'set-a',     label: 'Setting A' },
+    { id: 'set-b',     label: 'Setting B' },
+    { id: 'set-split', label: 'Split payments', children: [
+      { id: 'split-owner',  label: 'Owner payback' },
+      { id: 'split-x1',     label: 'Commission rules' },
+      { id: 'split-x2',     label: 'Payment methods' },
+    ]},
+  ]},
+];
+
+const ACCOUNTS = [
+  { id: 'acc1', name: 'Conciergerie',       code: '#18048', color: '#04969d' },
+  { id: 'acc2', name: 'Villa Paradiso',      code: '#22091', color: '#6366f1' },
+  { id: 'acc3', name: 'Mountain Retreats',   code: '#33120', color: '#ea580c' },
+];
+
+/* ═══════════════════════════════════════════════════════
+   State
+   ═══════════════════════════════════════════════════════ */
+let isPinned = false;
+let collapseTimer = null;
+let activeItemId = 'bookings';
+let currentAccount = ACCOUNTS[0];
+let openFlyoutParentId = null;    // level 2
+let openFlyoutL3ParentId = null;  // level 3
+
+// Stores the navigation path so we can restore flyouts on expand
+// e.g. ['settings', 'set-split', 'split-owner'] for Settings > Split payments > Owner payback
+let activePath = ['bookings'];
+
+const sidebar      = document.getElementById('sidebar');
+const sidebarContainer = document.getElementById('sidebarContainer');
+const pinBtn       = document.getElementById('pinBtn');
+const sidebarShadow = document.getElementById('sidebarShadow');
+const accountToggle  = document.getElementById('accountToggle');
+const accountDropdown = document.getElementById('accountDropdown');
+const flyoutL2      = document.getElementById('flyoutL2');
+const flyoutL2Header = document.getElementById('flyoutL2Header');
+const flyoutL2Body   = document.getElementById('flyoutL2Body');
+const flyoutL3       = document.getElementById('flyoutL3');
+const flyoutL3Header = document.getElementById('flyoutL3Header');
+const flyoutL3Body   = document.getElementById('flyoutL3Body');
+
+/* ═══════════════════════════════════════════════════════
+   Render sidebar menu items
+   ═══════════════════════════════════════════════════════ */
+function renderItems(items, containerId) {
+  const list = document.getElementById(containerId);
+  list.innerHTML = '';
+
+  items.forEach(item => {
+    const li = document.createElement('li');
+    li.className = 'nav-item';
+    li.dataset.id = item.id;
+
+    const hasChildren = item.children && item.children.length > 0;
+    const isActive = activeItemId === item.id;
+
+    const a = document.createElement('a');
+    a.className = 'nav-link' + (isActive ? ' active' : '');
+    a.href = '#';
+    a.dataset.tooltip = item.label;
+    a.dataset.itemId = item.id;
+
+    let metaHTML = '';
+    if (item.badge || hasChildren) {
+      let inner = '';
+      if (item.badge) inner += `<span class="nav-badge">${item.badge}</span>`;
+      if (hasChildren) inner += `<i class="fa-solid fa-chevron-right nav-link-chevron"></i>`;
+      metaHTML = `<span class="nav-link-meta">${inner}</span>`;
+    }
+
+    let badgeDotHTML = item.badge ? '<span class="nav-badge-dot"></span>' : '';
+
+    a.innerHTML = `
+      <span class="nav-link-icon"><i class="${item.icon}"></i></span>
+      <span class="nav-link-text">${item.label}</span>
+      ${metaHTML}
+      ${badgeDotHTML}
+    `;
+
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (hasChildren) {
+        toggleFlyoutL2(item);
+      } else {
+        closeFlyouts();
+        setActive(item.id);
+        navigateTo(item.id);
+      }
+    });
+
+    li.appendChild(a);
+    list.appendChild(li);
+  });
+}
+
+function setActive(id) {
+  activeItemId = id;
+  // Find the path to determine which sidebar L1 item should be highlighted
+  const path = findItemPath(id, ALL_ITEMS);
+  const l1Id = path ? path[0].id : id;
+
+  document.querySelectorAll('.nav-link').forEach(l => {
+    l.classList.remove('active');
+    // Highlight the L1 parent (or the item itself if top-level)
+    if (l.dataset.itemId === l1Id) l.classList.add('active');
+  });
+}
+
+function highlightParent(parentId) {
+  document.querySelectorAll('.nav-link').forEach(l => {
+    if (l.dataset.itemId === parentId) {
+      l.classList.add('active');
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════════════
+   Navigation simulation
+   Builds breadcrumb trail and updates main content area
+   ═══════════════════════════════════════════════════════ */
+const ALL_ITEMS = [...MENU_ITEMS, ...FOOTER_ITEMS];
+
+function findBreadcrumbPath(targetId, items, trail) {
+  for (const item of items) {
+    if (item.id === targetId) {
+      return [...trail, item];
+    }
+    if (item.children) {
+      const found = findBreadcrumbPath(targetId, item.children, [...trail, item]);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function findItemIcon(itemId) {
+  for (const item of ALL_ITEMS) {
+    if (item.id === itemId) return item.icon;
+    if (item.children) {
+      for (const child of item.children) {
+        if (child.id === itemId) return item.icon;
+        if (child.children) {
+          for (const sub of child.children) {
+            if (sub.id === itemId) return item.icon;
+          }
+        }
+      }
+    }
+  }
+  return 'fa-solid fa-file';
+}
+
+const LOREM_PARAGRAPHS = [
+  'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+  'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
+  'Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Vestibulum tortor quam, feugiat vitae, ultricies eget, tempor sit amet, ante. Donec eu libero sit amet quam egestas semper.',
+  'Curabitur blandit tempus porttitor. Nullam quis risus eget urna mollis ornare vel eu leo. Donec id elit non mi porta gravida at eget metus. Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor.',
+  'Maecenas faucibus mollis interdum. Etiam porta sem malesuada magna mollis euismod. Cras justo odio, dapibus ut facilisis in, egestas eget quam. Aenean eu leo quam. Pellentesque ornare sem lacinia quam venenatis vestibulum.',
+];
+
+/* Find the full item objects along the path to targetId */
+function findItemPath(targetId, items) {
+  for (const item of items) {
+    if (item.id === targetId) return [item];
+    if (item.children) {
+      const sub = findItemPath(targetId, item.children);
+      if (sub) return [item, ...sub];
+    }
+  }
+  return null;
+}
+
+/* Restore flyout panels to show the current active path on expand */
+function restoreFlyoutsForActivePath() {
+  // Don't restore if flyouts are already open (user is interacting)
+  if (openFlyoutParentId) return;
+
+  const path = findItemPath(activeItemId, ALL_ITEMS);
+  if (!path || path.length <= 1) return; // no flyouts needed for top-level items
+
+  // path[0] = L1 parent (e.g. settings), path[1] = L2 child, path[2] = L3 child
+  const l1 = path[0];
+  toggleFlyoutL2(l1);
+
+  if (path.length >= 3) {
+    const l2 = path[1];
+    if (l2.children && l2.children.length > 0) {
+      toggleFlyoutL3(l2);
+    }
+  }
+
+  // Highlight the active items in the flyout panels
+  setTimeout(() => {
+    // Highlight active L2 item
+    if (path.length === 2) {
+      flyoutL2Body.querySelectorAll('.flyout-link').forEach(l => {
+        if (l.textContent.trim() === path[1].label) l.classList.add('active');
+      });
+    }
+    // Highlight active L3 item
+    if (path.length === 3) {
+      flyoutL3Body.querySelectorAll('.flyout-link').forEach(l => {
+        if (l.textContent.trim() === path[2].label) l.classList.add('active');
+      });
+    }
+  }, 10);
+}
+
+function navigateTo(targetId, parentId, grandparentId) {
+  const path = findBreadcrumbPath(targetId, ALL_ITEMS, []) || [];
+  const pageLabel = path.length ? path[path.length - 1].label : targetId;
+  const rootIcon = findItemIcon(targetId);
+
+  // Update breadcrumbs
+  const topbar = document.getElementById('topbar');
+  let crumbsHTML = `<i class="${rootIcon}" style="font-size:16px;color:var(--gray-400)"></i>`;
+  path.forEach((seg, i) => {
+    const isLast = i === path.length - 1;
+    if (i > 0) crumbsHTML += `<i class="fa-solid fa-chevron-right" style="font-size:10px;color:var(--gray-300);margin:0 2px"></i>`;
+    crumbsHTML += isLast
+      ? `<span style="color:var(--gray-800)">${seg.label}</span>`
+      : `<span style="color:var(--gray-500);cursor:pointer">${seg.label}</span>`;
+  });
+  topbar.querySelector('.topbar-breadcrumbs').innerHTML = crumbsHTML;
+
+  // Update main content with simulated page
+  const mainContent = document.getElementById('mainContent');
+  const numParagraphs = 2 + Math.floor(Math.random() * 3);
+  const paragraphs = LOREM_PARAGRAPHS.slice(0, numParagraphs).map(p => `<p>${p}</p>`).join('');
+
+  mainContent.innerHTML = `
+    <h1>${pageLabel}</h1>
+    <div style="display:flex;gap:12px;margin:16px 0 24px">
+      <span style="background:var(--gray-100);padding:6px 14px;border-radius:6px;font-size:13px;font-weight:600;color:var(--gray-500)">
+        <i class="fa-regular fa-clock" style="margin-right:4px"></i> Last updated: just now
+      </span>
+      <span style="background:var(--teal-600);color:#fff;padding:6px 14px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">
+        <i class="fa-solid fa-plus" style="margin-right:4px"></i> New ${pageLabel}
+      </span>
+    </div>
+    ${paragraphs}
+    <div style="margin-top:32px;padding:24px;background:#fff;border:1px solid var(--border-color);border-radius:8px">
+      <div style="font-size:14px;font-weight:600;color:var(--gray-700);margin-bottom:12px">
+        <i class="fa-solid fa-table" style="margin-right:6px;color:var(--gray-400)"></i> ${pageLabel} data
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+        ${[1,2,3,4].map(n => `
+          <div style="padding:16px;background:var(--gray-50);border-radius:6px;text-align:center">
+            <div style="font-size:24px;font-weight:700;color:var(--teal-700)">${Math.floor(Math.random()*500)}</div>
+            <div style="font-size:12px;color:var(--gray-400);margin-top:4px">Metric ${n}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Flyout level 2 (opens to the right of the sidebar)
+   ═══════════════════════════════════════════════════════ */
+function toggleFlyoutL2(item) {
+  if (openFlyoutParentId === item.id) {
+    closeFlyouts();
+    return;
+  }
+
+  closeFlyoutL3();
+  openFlyoutParentId = item.id;
+  flyoutL2Header.textContent = item.label;
+  flyoutL2Body.innerHTML = '';
+
+  item.children.forEach(child => {
+    const hasL3 = child.children && child.children.length > 0;
+    const btn = document.createElement('button');
+    btn.className = 'flyout-link';
+    btn.innerHTML = `
+      <span>${child.label}</span>
+      ${hasL3 ? '<i class="fa-solid fa-chevron-right flyout-link-chevron"></i>' : ''}
+    `;
+    btn.addEventListener('click', () => {
+      if (hasL3) {
+        toggleFlyoutL3(child);
+      } else {
+        setActive(child.id);
+        highlightParent(item.id);
+        closeFlyouts();
+        navigateTo(child.id);
+      }
+    });
+    flyoutL2Body.appendChild(btn);
+  });
+
+  flyoutL2.classList.add('open');
+  sidebarShadow.classList.add('visible');
+  highlightParent(item.id);
+}
+
+/* ═══════════════════════════════════════════════════════
+   Flyout level 3
+   ═══════════════════════════════════════════════════════ */
+function toggleFlyoutL3(child) {
+  if (openFlyoutL3ParentId === child.id) {
+    closeFlyoutL3();
+    return;
+  }
+
+  openFlyoutL3ParentId = child.id;
+  flyoutL3Header.textContent = child.label;
+  flyoutL3Body.innerHTML = '';
+
+  // Highlight L2 parent
+  flyoutL2Body.querySelectorAll('.flyout-link').forEach(l => l.classList.remove('active'));
+  flyoutL2Body.querySelectorAll('.flyout-link').forEach(l => {
+    if (l.textContent.trim().startsWith(child.label)) l.classList.add('active');
+  });
+
+  child.children.forEach(sub => {
+    const btn = document.createElement('button');
+    btn.className = 'flyout-link';
+    btn.textContent = sub.label;
+    btn.addEventListener('click', () => {
+      const parentItemId = openFlyoutParentId;
+      setActive(sub.id);
+      closeFlyouts();
+      if (parentItemId) highlightParent(parentItemId);
+      navigateTo(sub.id);
+    });
+    flyoutL3Body.appendChild(btn);
+  });
+
+  flyoutL3.classList.add('open');
+}
+
+function closeFlyoutL3() {
+  flyoutL3.classList.remove('open');
+  openFlyoutL3ParentId = null;
+  flyoutL2Body.querySelectorAll('.flyout-link').forEach(l => l.classList.remove('active'));
+}
+
+function closeFlyouts() {
+  flyoutL2.classList.remove('open');
+  flyoutL3.classList.remove('open');
+  sidebarShadow.classList.remove('visible');
+  openFlyoutParentId = null;
+  openFlyoutL3ParentId = null;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Account switcher dropdown
+   ═══════════════════════════════════════════════════════ */
+function renderAccountDropdown() {
+  accountDropdown.innerHTML = '';
+  ACCOUNTS.forEach(acc => {
+    const btn = document.createElement('button');
+    btn.className = 'account-dropdown-item' + (acc.id === currentAccount.id ? ' active' : '');
+    btn.innerHTML = `
+      <div class="account-dropdown-icon" style="background:${acc.color}">${acc.name[0]}</div>
+      <div class="account-dropdown-text">
+        <div class="account-dropdown-name">${acc.name}</div>
+        <div class="account-dropdown-id">${acc.code}</div>
+      </div>
+      ${acc.id === currentAccount.id ? '<i class="fa-solid fa-check account-dropdown-check"></i>' : ''}
+    `;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      currentAccount = acc;
+      document.getElementById('currentAccountName').textContent = acc.name;
+      closeAccountDropdown();
+      renderAccountDropdown();
+    });
+    accountDropdown.appendChild(btn);
+  });
+}
+
+function toggleAccountDropdown(e) {
+  e.stopPropagation();
+  if (!sidebar.classList.contains('expanded')) return;
+  const isOpen = accountDropdown.classList.contains('open');
+  if (isOpen) {
+    closeAccountDropdown();
+  } else {
+    accountDropdown.classList.add('open');
+    accountToggle.classList.add('dropdown-open');
+  }
+}
+
+function closeAccountDropdown() {
+  accountDropdown.classList.remove('open');
+  accountToggle.classList.remove('dropdown-open');
+}
+
+accountToggle.addEventListener('click', toggleAccountDropdown);
+
+/* ═══════════════════════════════════════════════════════
+   Expand / Collapse
+   ═══════════════════════════════════════════════════════ */
+function expand() {
+  clearTimeout(collapseTimer);
+  sidebar.classList.add('expanded');
+  document.body.classList.add('sidebar-expanded');
+  // Restore flyouts to show where the user currently is
+  restoreFlyoutsForActivePath();
+}
+
+function collapse() {
+  if (isPinned) return;
+  collapseTimer = setTimeout(() => {
+    sidebar.classList.remove('expanded');
+    document.body.classList.remove('sidebar-expanded');
+    closeFlyouts();
+    closeAccountDropdown();
+  }, 800);
+}
+
+sidebarContainer.addEventListener('mouseenter', expand);
+sidebarContainer.addEventListener('mouseleave', collapse);
+
+/* Close flyouts if clicking on the shadow */
+sidebarShadow.addEventListener('click', () => {
+  closeFlyouts();
+});
+
+/* ═══════════════════════════════════════════════════════
+   Pin / Unpin
+   ═══════════════════════════════════════════════════════ */
+pinBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  isPinned = !isPinned;
+  sidebar.classList.toggle('pinned', isPinned);
+  pinBtn.title = isPinned ? 'Unpin sidebar' : 'Pin sidebar open';
+  if (isPinned) {
+    expand();
+  } else {
+    collapse();
+  }
+});
+
+/* Close dropdown on outside click */
+document.addEventListener('click', (e) => {
+  if (!accountToggle.contains(e.target) && !accountDropdown.contains(e.target)) {
+    closeAccountDropdown();
+  }
+});
+
+/* ═══════════════════════════════════════════════════════
+   Init
+   ═══════════════════════════════════════════════════════ */
+renderItems(MENU_ITEMS, 'navList');
+renderItems(FOOTER_ITEMS, 'footerList');
+renderAccountDropdown();
+</script>
+
+</body>
+</html>
