@@ -269,7 +269,22 @@
     }
 
     .nav-link:hover { background: var(--gray-100); color: var(--gray-700); }
-    .nav-link.active { background: var(--gray-100); color: var(--teal-700); }
+
+    .nav-link.active {
+      background: var(--gray-100);
+      color: var(--teal-700);
+    }
+
+    /* Glow effect on click */
+    @keyframes nav-glow {
+      0%   { box-shadow: inset 0 0 0 0 rgba(4, 150, 157, 0.25); }
+      40%  { box-shadow: inset 0 0 12px 2px rgba(4, 150, 157, 0.18); }
+      100% { box-shadow: inset 0 0 0 0 rgba(4, 150, 157, 0); }
+    }
+
+    .nav-link.glow {
+      animation: nav-glow 0.6s ease-out;
+    }
 
     .nav-link-icon {
       width: var(--icon-size);
@@ -426,26 +441,26 @@
        - Always visible when pinned
        - arrow-right-from-line → pinned: rotate 180
        ═══════════════════════════════════════════ */
-    /* Pin button: floating circle at the right edge of sidebar,
-       below the header (Figma: 40x40, between header and first item) */
+    /* Pin button: floating at the right edge of sidebar,
+       below the header. Figma specs from "wrapping" component */
     .pin-btn {
       position: absolute;
       top: 70px;
       z-index: 1002;
       width: 40px;
       height: 40px;
-      border-radius: 50%;
-      background: #fff;
-      border: 1px solid var(--border-color);
+      padding: 0;
+      border-radius: 1000px;
+      background: #ffffff;
+      border: 1px solid #E3E4E7;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       opacity: 0;
       pointer-events: none;
-      transition: opacity var(--transition-smooth), left var(--transition-smooth), background var(--transition-fast), box-shadow var(--transition-fast);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      /* Position: right edge of collapsed sidebar */
+      transition: opacity 0.4s ease, left var(--transition-smooth), background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 2px 4px 20px rgba(0, 0, 0, 0.1);
       left: calc(var(--sidebar-collapsed) - 20px);
     }
 
@@ -454,26 +469,42 @@
       height: 20px;
     }
 
-    .sidebar.expanded ~ .pin-btn {
-      left: calc(var(--sidebar-expanded) - 20px);
-      opacity: 1;
-      pointer-events: auto;
+    /* Default icon color: teal-600 */
+    .pin-btn svg line,
+    .pin-btn svg path {
+      stroke: var(--teal-600);
+      transition: stroke 0.2s ease;
     }
 
-    .pin-btn:hover {
-      background: var(--gray-50);
-      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    /* Position follows sidebar width when expanded */
+    .sidebar.expanded ~ .pin-btn {
+      left: calc(var(--sidebar-expanded) - 20px);
     }
 
     .sidebar.pinned ~ .pin-btn {
       left: calc(var(--sidebar-expanded) - 20px);
-      opacity: 1;
-      pointer-events: auto;
     }
 
-    /* Flip SVG arrow when pinned */
-    .sidebar.pinned ~ .pin-btn svg {
-      transform: rotate(180deg);
+    /* Only visible when sidebar-container is hovered */
+    .sidebar-container:hover .pin-btn.can-show {
+      opacity: 1;
+      pointer-events: auto;
+      transition: opacity 0.2s ease, left var(--transition-smooth), background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .pin-btn:hover {
+      background: var(--gray-100);
+    }
+
+    /* Pinned (focused) state: darker bg, darker border, darker icon */
+    .sidebar.pinned ~ .pin-btn {
+      background: var(--gray-200);
+      border-color: var(--gray-300);
+    }
+
+    .sidebar.pinned ~ .pin-btn svg line,
+    .sidebar.pinned ~ .pin-btn svg path {
+      stroke: var(--teal-800);
     }
 
     /* ═══════════════════════════════════════════
@@ -535,6 +566,7 @@
 
     .flyout-link:hover { background: var(--gray-100); color: var(--gray-700); }
     .flyout-link.active { color: var(--teal-700); background: var(--gray-100); }
+    .flyout-link.glow { animation: nav-glow 0.6s ease-out; }
 
     .flyout-link-chevron {
       font-size: 11px;
@@ -886,15 +918,24 @@ function renderItems(items, containerId) {
 
 function setActive(id) {
   activeItemId = id;
-  // Find the path to determine which sidebar L1 item should be highlighted
   const path = findItemPath(id, ALL_ITEMS);
   const l1Id = path ? path[0].id : id;
 
   document.querySelectorAll('.nav-link').forEach(l => {
-    l.classList.remove('active');
-    // Highlight the L1 parent (or the item itself if top-level)
-    if (l.dataset.itemId === l1Id) l.classList.add('active');
+    l.classList.remove('active', 'glow');
+    if (l.dataset.itemId === l1Id) {
+      l.classList.add('active');
+      triggerGlow(l);
+    }
   });
+}
+
+/* Trigger glow animation on an element (restarts if already playing) */
+function triggerGlow(el) {
+  el.classList.remove('glow');
+  // Force reflow to restart animation
+  void el.offsetWidth;
+  el.classList.add('glow');
 }
 
 function highlightParent(parentId) {
@@ -1072,9 +1113,11 @@ function toggleFlyoutL2(item) {
       if (hasL3) {
         toggleFlyoutL3(child);
       } else {
+        triggerGlow(btn);
         setActive(child.id);
         highlightParent(item.id);
-        closeFlyouts();
+        // Small delay so glow is visible before flyouts close
+        setTimeout(() => { closeFlyouts(); }, 150);
         navigateTo(child.id);
       }
     });
@@ -1189,6 +1232,7 @@ function expand() {
   clearTimeout(collapseTimer);
   sidebar.classList.add('expanded');
   document.body.classList.add('sidebar-expanded');
+  pinBtn.classList.add('can-show');
   // Restore flyouts to show where the user currently is
   restoreFlyoutsForActivePath();
 }
@@ -1198,6 +1242,7 @@ function collapse() {
   collapseTimer = setTimeout(() => {
     sidebar.classList.remove('expanded');
     document.body.classList.remove('sidebar-expanded');
+    pinBtn.classList.remove('can-show');
     closeFlyouts();
     closeAccountDropdown();
   }, 800);
