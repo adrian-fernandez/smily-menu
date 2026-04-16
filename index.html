@@ -450,7 +450,7 @@
       width: 40px;
       height: 40px;
       padding: 0;
-      border-radius: 1000px;
+      border-radius: 6px;
       background: #ffffff;
       border: 1px solid #E3E4E7;
       display: flex;
@@ -496,15 +496,10 @@
       background: var(--gray-100);
     }
 
-    /* Pinned (focused) state: darker bg, darker border, darker icon */
+    /* Pinned (focused) state */
     .sidebar.pinned ~ .pin-btn {
-      background: var(--gray-200);
-      border-color: var(--gray-300);
-    }
-
-    .sidebar.pinned ~ .pin-btn svg line,
-    .sidebar.pinned ~ .pin-btn svg path {
-      stroke: var(--teal-800);
+      background: #ECEDF2;
+      border-color: #AEB6CB;
     }
 
     /* ═══════════════════════════════════════════
