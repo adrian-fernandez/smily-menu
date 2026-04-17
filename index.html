@@ -668,6 +668,296 @@
       font-size: 13px;
       color: var(--teal-700);
     }
+
+    /* ═══════════════════════════════════════════
+       MOBILE LAYOUT (< 768px)
+       Drill-down overlay menu + bottom nav bar
+       ═══════════════════════════════════════════ */
+
+    .mobile-nav,
+    .mobile-page-header { display: none; }
+
+    /* Drill-down menu drawer (from right, with shadow + left margin) */
+    .mob-menu {
+      position: fixed;
+      top: 0; bottom: 0; right: 0;
+      left: 40px;
+      background: #fff;
+      z-index: 1300;
+      display: flex;
+      flex-direction: column;
+      box-shadow: -8px 0 30px rgba(0, 0, 0, 0.15);
+      transform: translateX(110%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      pointer-events: none;
+    }
+    .mob-menu.open {
+      transform: translateX(0);
+      pointer-events: auto;
+    }
+
+    /* Dark scrim behind the drawer */
+    .mob-menu-scrim {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: 1299;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .mob-menu-scrim.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Menu header: [< back] Title [✕ close] */
+    .mob-menu-header {
+      display: flex;
+      align-items: center;
+      min-height: 56px;
+      padding: 0 8px;
+      border-bottom: 1px solid var(--border-color);
+      gap: 4px;
+    }
+
+    .mob-menu-back,
+    .mob-menu-close {
+      width: 40px;
+      height: 40px;
+      border: none;
+      background: none;
+      font-size: 16px;
+      color: var(--gray-500);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+    .mob-menu-back:hover,
+    .mob-menu-close:hover { background: var(--gray-100); }
+    .mob-menu-back.hidden { visibility: hidden; }
+
+    .mob-menu-title {
+      flex: 1;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--teal-600);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .mob-menu-title .mob-chevron {
+      font-size: 11px;
+      color: var(--gray-300);
+      margin-left: 4px;
+    }
+
+    /* Menu body: list of items */
+    .mob-menu-body {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Slide transition for drill-down navigation */
+    @keyframes mob-slide-in-right {
+      from { transform: translateX(100%); opacity: 0; }
+      to   { transform: translateX(0);    opacity: 1; }
+    }
+    @keyframes mob-slide-in-left {
+      from { transform: translateX(-100%); opacity: 0; }
+      to   { transform: translateX(0);     opacity: 1; }
+    }
+
+    .mob-menu-body.slide-right {
+      animation: mob-slide-in-right 0.25s ease-out;
+    }
+    .mob-menu-body.slide-left {
+      animation: mob-slide-in-left 0.25s ease-out;
+    }
+
+    .mob-menu-separator {
+      height: 1px;
+      background: var(--border-color);
+      margin: 8px 16px;
+    }
+
+    .mob-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 20px;
+      width: 100%;
+      border: none;
+      background: none;
+      text-align: left;
+      font-family: 'Open Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-600);
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .mob-menu-item:active { background: var(--gray-100); }
+    .mob-menu-item.active { color: var(--teal-700); }
+
+    .mob-menu-item .mob-icon {
+      width: 20px;
+      min-width: 20px;
+      text-align: center;
+      color: var(--gray-400);
+      font-size: 16px;
+    }
+    .mob-menu-item.active .mob-icon { color: var(--teal); }
+
+    .mob-menu-item .mob-label { flex: 1; }
+
+    .mob-menu-item .mob-arrow {
+      font-size: 12px;
+      color: var(--gray-300);
+    }
+
+    /* User row at bottom of L1 */
+    .mob-menu-user {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 20px;
+    }
+
+    .mob-menu-user-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--teal-600);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .mob-menu-user-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-600);
+    }
+
+    @media (max-width: 767px) {
+      .sidebar-container,
+      .topbar,
+      .pin-btn,
+      .sidebar-shadow { display: none !important; }
+
+      body { flex-direction: column; }
+
+      .main-content {
+        margin-left: 0 !important;
+        margin-top: 0;
+        padding: 16px;
+        padding-bottom: 80px;
+      }
+
+      /* Mobile page header (shown on the page, not the menu) */
+      .mobile-page-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 16px;
+        background: #fff;
+        border-bottom: 1px solid var(--border-color);
+        position: sticky;
+        top: 0;
+        z-index: 1100;
+      }
+
+      .mobile-page-header-back {
+        font-size: 16px;
+        color: var(--gray-500);
+        cursor: pointer;
+        border: none;
+        background: none;
+        padding: 0;
+        display: flex;
+        align-items: center;
+      }
+      .mobile-page-header-back:empty { display: none; }
+
+      .mobile-page-header-icon {
+        font-size: 16px;
+        color: var(--gray-400);
+      }
+
+      .mobile-page-header-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--gray-800);
+        flex: 1;
+      }
+
+      .mobile-page-header-cta {
+        width: 36px;
+        height: 36px;
+        border-radius: 6px;
+        background: var(--teal-600);
+        border: none;
+        color: #fff;
+        font-size: 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Mobile bottom nav */
+      .mobile-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 56px;
+        background: #fff;
+        border-top: 1px solid var(--border-color);
+        z-index: 1100;
+        align-items: stretch;
+      }
+
+      .mob-nav-btn {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        border: none;
+        background: none;
+        cursor: pointer;
+        color: var(--gray-400);
+        font-size: 10px;
+        font-weight: 600;
+        font-family: 'Open Sans', sans-serif;
+        position: relative;
+      }
+      .mob-nav-btn i { font-size: 18px; }
+      .mob-nav-btn.active { color: var(--teal-600); }
+      .mob-nav-btn.active::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 20%;
+        right: 20%;
+        height: 2px;
+        background: var(--teal-600);
+        border-radius: 2px 2px 0 0;
+      }
+    }
   </style>
 </head>
 <body>
@@ -764,6 +1054,29 @@
     <strong>Submenus</strong> open as flyout panels to the right (click items with <code>&gt;</code>).<br>
     Click <strong>Conciergerie</strong> to switch accounts.
   </p>
+</div>
+
+<!-- Mobile page header (back + title + CTA, shown on the page) -->
+<div class="mobile-page-header" id="mobPageHeader">
+  <button class="mobile-page-header-back" id="mobPageBack"></button>
+  <span class="mobile-page-header-title" id="mobPageTitle">Tasks</span>
+  <button class="mobile-page-header-cta"><i class="fa-solid fa-plus"></i></button>
+</div>
+
+<!-- Mobile bottom nav bar -->
+<nav class="mobile-nav" id="mobileNav"></nav>
+
+<!-- Scrim behind mobile menu drawer -->
+<div class="mob-menu-scrim" id="mobMenuScrim"></div>
+
+<!-- Mobile drill-down menu overlay -->
+<div class="mob-menu" id="mobMenu">
+  <div class="mob-menu-header">
+    <button class="mob-menu-back hidden" id="mobMenuBack"><i class="fa-solid fa-chevron-left"></i></button>
+    <span class="mob-menu-title" id="mobMenuTitle">Conciergerie <i class="fa-solid fa-chevron-down mob-chevron"></i></span>
+    <button class="mob-menu-close" id="mobMenuClose"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="mob-menu-body" id="mobMenuBody"></div>
 </div>
 
 <script>
@@ -1279,6 +1592,231 @@ document.addEventListener('click', (e) => {
 renderItems(MENU_ITEMS, 'navList');
 renderItems(FOOTER_ITEMS, 'footerList');
 renderAccountDropdown();
+
+/* ═══════════════════════════════════════════════════════
+   MOBILE: Drill-down menu overlay + bottom nav
+   ═══════════════════════════════════════════════════════ */
+const mobMenu      = document.getElementById('mobMenu');
+const mobMenuBack  = document.getElementById('mobMenuBack');
+const mobMenuTitle = document.getElementById('mobMenuTitle');
+const mobMenuClose = document.getElementById('mobMenuClose');
+const mobMenuBody  = document.getElementById('mobMenuBody');
+const mobileNav    = document.getElementById('mobileNav');
+const mobPageHeader = document.getElementById('mobPageHeader');
+const mobPageBack   = document.getElementById('mobPageBack');
+const mobPageTitle  = document.getElementById('mobPageTitle');
+
+// Bottom nav config: first 4 items of MENU_ITEMS that appear in bottom bar
+// Figma shows: Calendar, Bookings, Inbox, Tasks, More
+const MOB_NAV_ITEMS = [
+  MENU_ITEMS.find(i => i.id === 'calendar'),
+  MENU_ITEMS.find(i => i.id === 'bookings'),
+  MENU_ITEMS.find(i => i.id === 'inbox'),
+  MENU_ITEMS.find(i => i.id === 'tasks'),
+].filter(Boolean);
+
+// Drill-down navigation stack: each entry is { title, items, showIcons, isL1 }
+let mobMenuStack = [];
+let mobCurrentItems = [];  // items currently displayed
+let mobCurrentShowIcons = false;
+
+function isMobile() { return window.innerWidth < 768; }
+
+/* ── Bottom nav bar ── */
+function renderMobNav() {
+  mobileNav.innerHTML = '';
+  MOB_NAV_ITEMS.forEach(item => {
+    const btn = document.createElement('button');
+    btn.className = 'mob-nav-btn';
+    const path = findItemPath(activeItemId, ALL_ITEMS);
+    if (path && path[0].id === item.id) btn.classList.add('active');
+    btn.innerHTML = `<i class="${item.icon}"></i><span>${item.label}</span>`;
+    btn.addEventListener('click', () => {
+      if (item.children) {
+        // Open menu at this section's L2
+        mobOpenLevel(item.label, item.children, false);
+        mobOpenMenu();
+      } else {
+        mobSelectItem(item.id);
+      }
+    });
+    mobileNav.appendChild(btn);
+  });
+  // "More" hamburger
+  const more = document.createElement('button');
+  more.className = 'mob-nav-btn';
+  more.innerHTML = `<i class="fa-solid fa-bars"></i><span>More</span>`;
+  more.addEventListener('click', mobOpenL1);
+  mobileNav.appendChild(more);
+}
+
+/* ── Open menu at Level 1 (all items) ── */
+function mobOpenL1() {
+  mobMenuStack = [];
+  const allItems = [...MENU_ITEMS, { separator: true }, ...FOOTER_ITEMS];
+  mobRenderLevel('Conciergerie', allItems, true, true);
+  mobOpenMenu();
+}
+
+/* ── Open a specific level ── */
+function mobOpenLevel(title, items, showIcons) {
+  mobMenuStack = []; // reset stack
+  mobRenderLevel(title, items, showIcons, false);
+}
+
+/* ── Drill into a child level ── */
+function mobDrillInto(title, items) {
+  const isCurrentL1 = mobMenuBack.classList.contains('hidden');
+  mobMenuStack.push({
+    title: isCurrentL1 ? 'Conciergerie' : mobMenuTitle.textContent,
+    items: mobCurrentItems,
+    showIcons: mobCurrentShowIcons,
+    isL1: isCurrentL1,
+  });
+  mobRenderLevel(title, items, false, false);
+  mobSlide('right');
+}
+
+/* ── Render a level ── */
+function mobRenderLevel(title, items, showIcons, isL1) {
+  mobCurrentItems = items;
+  mobCurrentShowIcons = showIcons;
+
+  // Header
+  if (isL1) {
+    mobMenuTitle.innerHTML = `${title} <i class="fa-solid fa-chevron-down mob-chevron"></i>`;
+    mobMenuBack.classList.add('hidden');
+  } else {
+    mobMenuTitle.textContent = title;
+    mobMenuBack.classList.remove('hidden');
+  }
+
+  // Body
+  mobMenuBody.innerHTML = '';
+  items.forEach(item => {
+    if (item.separator) {
+      const sep = document.createElement('div');
+      sep.className = 'mob-menu-separator';
+      mobMenuBody.appendChild(sep);
+      return;
+    }
+
+    const btn = document.createElement('button');
+    btn.className = 'mob-menu-item';
+
+    const hasChildren = item.children && item.children.length > 0;
+    const path = findItemPath(activeItemId, ALL_ITEMS);
+    if (path && path.some(p => p.id === item.id)) btn.classList.add('active');
+
+    btn.innerHTML = `
+      ${showIcons && item.icon ? `<i class="${item.icon} mob-icon"></i>` : ''}
+      <span class="mob-label">${item.label}</span>
+      ${hasChildren ? '<i class="fa-solid fa-chevron-right mob-arrow"></i>' : ''}
+    `;
+
+    btn.addEventListener('click', () => {
+      if (hasChildren) {
+        mobDrillInto(item.label, item.children);
+      } else {
+        mobSelectItem(item.id);
+      }
+    });
+
+    mobMenuBody.appendChild(btn);
+  });
+
+  // Add user row at bottom of L1
+  if (isL1) {
+    const user = document.createElement('div');
+    user.className = 'mob-menu-user';
+    user.innerHTML = `
+      <div class="mob-menu-user-avatar">FL</div>
+      <span class="mob-menu-user-name">User name</span>
+    `;
+    mobMenuBody.appendChild(user);
+  }
+}
+
+/* ── Back button: go up one level ── */
+// We store the parent info in the stack so we can re-render properly
+mobMenuBack.onclick = () => {
+  if (mobMenuStack.length > 0) {
+    const prev = mobMenuStack.pop();
+    mobRenderLevel(prev.title, prev.items, prev.showIcons, prev.isL1);
+  } else {
+    const allItems = [...MENU_ITEMS, { separator: true }, ...FOOTER_ITEMS];
+    mobRenderLevel('Conciergerie', allItems, true, true);
+  }
+  mobSlide('left');
+};
+
+/* Trigger slide animation on menu body */
+function mobSlide(direction) {
+  const cls = direction === 'right' ? 'slide-right' : 'slide-left';
+  mobMenuBody.classList.remove('slide-right', 'slide-left');
+  void mobMenuBody.offsetWidth; // force reflow to restart animation
+  mobMenuBody.classList.add(cls);
+}
+
+/* ── Close menu ── */
+const mobMenuScrim = document.getElementById('mobMenuScrim');
+
+function mobCloseMenu() {
+  mobMenu.classList.remove('open');
+  mobMenuScrim.classList.remove('open');
+  mobMenuStack = [];
+}
+
+function mobOpenMenu() {
+  mobMenu.classList.add('open');
+  mobMenuScrim.classList.add('open');
+}
+
+mobMenuClose.addEventListener('click', mobCloseMenu);
+mobMenuScrim.addEventListener('click', mobCloseMenu);
+
+/* ── Select a final item: close menu, navigate ── */
+function mobSelectItem(id) {
+  mobCloseMenu();
+  mobMenuStack = [];
+  activeItemId = id;
+  setActive(id);
+  navigateTo(id);
+  updateMobPageHeader();
+  renderMobNav();
+}
+
+/* ── Page header (sticky top of page) ── */
+function updateMobPageHeader() {
+  const path = findItemPath(activeItemId, ALL_ITEMS);
+  if (!path) return;
+
+  const pageLabel = path[path.length - 1].label;
+  const rootIcon = path[0].icon || 'fa-solid fa-file';
+  const hasParent = path.length > 1;
+
+  mobPageTitle.textContent = pageLabel;
+
+  if (hasParent) {
+    mobPageBack.innerHTML = `<i class="fa-solid fa-chevron-left"></i>`;
+    mobPageBack.onclick = () => {
+      // Navigate to parent
+      const parentItem = path[path.length - 2];
+      if (parentItem.children) {
+        // Open the parent's children in menu
+        mobOpenLevel(parentItem.label, parentItem.children, false);
+        mobOpenMenu();
+      }
+    };
+  } else {
+    mobPageBack.innerHTML = `<i class="${rootIcon}" style="color:var(--gray-400)"></i>`;
+    mobPageBack.onclick = null;
+  }
+}
+
+/* ── Init ── */
+renderMobNav();
+updateMobPageHeader();
 </script>
 
 </body>
