@@ -1633,9 +1633,18 @@ function renderMobNav() {
     btn.innerHTML = `<i class="${item.icon}"></i><span>${item.label}</span>`;
     btn.addEventListener('click', () => {
       if (item.children) {
-        // Open menu at this section's L2
-        mobOpenLevel(item.label, item.children, false);
-        mobOpenMenu();
+        // If we're already inside this section, open at current depth
+        const activePath = findItemPath(activeItemId, ALL_ITEMS);
+        if (activePath && activePath[0].id === item.id && activePath.length > 1) {
+          mobOpenAtCurrentLevel();
+        } else {
+          // Open at L2 of this section
+          mobMenuStack = [];
+          const allItems = [...MENU_ITEMS, { separator: true }, ...FOOTER_ITEMS];
+          mobMenuStack.push({ title: 'Conciergerie', items: allItems, showIcons: true, isL1: true });
+          mobRenderLevel(item.label, item.children, false, false);
+          mobOpenMenu();
+        }
       } else {
         mobSelectItem(item.id);
       }
@@ -1646,7 +1655,7 @@ function renderMobNav() {
   const more = document.createElement('button');
   more.className = 'mob-nav-btn';
   more.innerHTML = `<i class="fa-solid fa-bars"></i><span>More</span>`;
-  more.addEventListener('click', mobOpenL1);
+  more.addEventListener('click', mobOpenAtCurrentLevel);
   mobileNav.appendChild(more);
 }
 
@@ -1658,9 +1667,55 @@ function mobOpenL1() {
   mobOpenMenu();
 }
 
+/* ── Open menu at the current active item's deepest level ── */
+function mobOpenAtCurrentLevel() {
+  const path = findItemPath(activeItemId, ALL_ITEMS);
+  if (!path || path.length <= 1) {
+    // Top-level item or not found: open L1
+    mobOpenL1();
+    return;
+  }
+
+  // Build the stack from L1 down to the parent of the deepest level
+  mobMenuStack = [];
+  const allItems = [...MENU_ITEMS, { separator: true }, ...FOOTER_ITEMS];
+
+  // Push L1 onto stack
+  mobMenuStack.push({
+    title: 'Conciergerie',
+    items: allItems,
+    showIcons: true,
+    isL1: true,
+  });
+
+  // Push intermediate levels onto stack (all except the last parent)
+  for (let i = 0; i < path.length - 2; i++) {
+    if (path[i].children) {
+      mobMenuStack.push({
+        title: path[i].label,
+        items: path[i].children,
+        showIcons: false,
+        isL1: false,
+      });
+    }
+  }
+
+  // Render the deepest parent level (the one containing the active item)
+  const deepestParent = path[path.length - 2];
+  if (deepestParent && deepestParent.children) {
+    mobRenderLevel(deepestParent.label, deepestParent.children, false, false);
+  } else {
+    // Fallback
+    mobMenuStack = [];
+    mobRenderLevel('Conciergerie', allItems, true, true);
+  }
+
+  mobOpenMenu();
+}
+
 /* ── Open a specific level ── */
 function mobOpenLevel(title, items, showIcons) {
-  mobMenuStack = []; // reset stack
+  mobMenuStack = [];
   mobRenderLevel(title, items, showIcons, false);
 }
 
