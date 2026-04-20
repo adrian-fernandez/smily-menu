@@ -268,7 +268,26 @@
       text-align: left;
     }
 
-    .nav-link:hover { background: var(--gray-100); color: var(--gray-700); }
+    .nav-link:hover {
+      background: var(--gray-100);
+      color: var(--gray-700);
+    }
+
+    /* Keyboard focus indicator: left accent bar + hover background.
+       Uses both :focus-visible and :focus for maximum compatibility. */
+    .sidebar .nav-link:focus,
+    .sidebar-footer .nav-link:focus,
+    .flyout-link:focus {
+      background: var(--gray-100) !important;
+      color: var(--teal-700) !important;
+      outline: none !important;
+      border-left: 3px solid var(--teal-600) !important;
+    }
+
+    .sidebar .nav-link:focus .nav-link-icon,
+    .sidebar-footer .nav-link:focus .nav-link-icon {
+      color: var(--teal) !important;
+    }
 
     .nav-link.active {
       background: var(--gray-100);
@@ -459,6 +478,7 @@
       cursor: pointer;
       opacity: 0;
       pointer-events: none;
+      visibility: hidden;
       transition: opacity 0.4s ease, left var(--transition-smooth), background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
       box-shadow: 2px 4px 20px rgba(0, 0, 0, 0.1);
       left: calc(var(--sidebar-collapsed) - 20px);
@@ -489,6 +509,7 @@
     .sidebar-container:hover .pin-btn.can-show {
       opacity: 1;
       pointer-events: auto;
+      visibility: visible;
       transition: opacity 0.2s ease, left var(--transition-smooth), background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
@@ -516,10 +537,12 @@
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
+      visibility: hidden;
     }
 
     .flyout-panel.open {
       width: var(--flyout-width);
+      visibility: visible;
     }
 
     .flyout-header {
@@ -560,6 +583,12 @@
     }
 
     .flyout-link:hover { background: var(--gray-100); color: var(--gray-700); }
+    .flyout-link:focus-visible {
+      background: var(--gray-100);
+      color: var(--gray-700);
+      outline: none;
+      border-left: 3px solid var(--teal-600);
+    }
     .flyout-link.active { color: var(--teal-700); background: var(--gray-100); }
     .flyout-link.glow { animation: nav-glow 0.6s ease-out; }
 
@@ -690,10 +719,12 @@
       transform: translateX(110%);
       transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       pointer-events: none;
+      visibility: hidden;
     }
     .mob-menu.open {
       transform: translateX(0);
       pointer-events: auto;
+      visibility: visible;
     }
 
     /* Dark scrim behind the drawer */
@@ -1188,6 +1219,7 @@ function renderItems(items, containerId) {
     const a = document.createElement('a');
     a.className = 'nav-link' + (isActive ? ' active' : '');
     a.href = '#';
+    a.tabIndex = 0;
     a.dataset.tooltip = item.label;
     a.dataset.itemId = item.id;
 
@@ -1556,6 +1588,88 @@ function collapse() {
 
 sidebarContainer.addEventListener('mouseenter', expand);
 sidebarContainer.addEventListener('mouseleave', collapse);
+
+// Focus-in: same as mouseenter (keyboard navigation expands sidebar)
+sidebarContainer.addEventListener('focusin', () => {
+  expand();
+});
+sidebarContainer.addEventListener('focusout', () => {
+  // Wait for the next frame to check if focus is still inside the container.
+  // This avoids false positives when Tab moves between two elements inside
+  // the same container (focusout fires before focusin on the new element).
+  requestAnimationFrame(() => {
+    if (!sidebarContainer.contains(document.activeElement)) {
+      collapse();
+    }
+  });
+});
+
+/* Keyboard navigation inside flyout panels */
+function handleFlyoutKeydown(panel, e) {
+  if (e.key === 'ArrowLeft' || e.key === 'Escape') {
+    e.preventDefault();
+    e.stopPropagation();
+    // Find which sidebar item opened this flyout and focus it
+    const parentId = openFlyoutParentId;
+    closeFlyouts();
+    if (parentId) {
+      const parentLink = document.querySelector(`[data-id="${parentId}"] .nav-link`);
+      parentLink?.focus();
+    }
+  } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    const links = Array.from(panel.querySelectorAll('.flyout-link, .nav-sublink'));
+    const current = links.indexOf(e.target);
+    if (current === -1) return;
+    const next = e.key === 'ArrowDown'
+      ? links[(current + 1) % links.length]
+      : links[(current - 1 + links.length) % links.length];
+    next?.focus();
+  }
+}
+
+flyoutL2.addEventListener('keydown', (e) => handleFlyoutKeydown(flyoutL2, e));
+flyoutL3.addEventListener('keydown', (e) => handleFlyoutKeydown(flyoutL3, e));
+
+/* Keyboard: ArrowRight / Enter / Space on sidebar items opens flyout */
+document.getElementById('navList').addEventListener('keydown', (e) => {
+  const link = e.target.closest('.nav-link');
+  if (!link) return;
+  const item = link.closest('.nav-item');
+  if (!item) return;
+  const itemId = item.dataset.id;
+  const menuItem = MENU_ITEMS.find(i => i.id === itemId);
+  if (!menuItem) return;
+
+  if ((e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') && menuItem.children) {
+    e.preventDefault();
+    toggleFlyoutL2(menuItem);
+    // Focus first flyout item
+    requestAnimationFrame(() => {
+      const firstLink = flyoutL2.querySelector('.flyout-link, .nav-sublink');
+      firstLink?.focus();
+    });
+  } else if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    const links = Array.from(document.querySelectorAll('#navList .nav-link'));
+    const idx = links.indexOf(link);
+    const next = links[(idx + 1) % links.length];
+    next?.focus();
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    const links = Array.from(document.querySelectorAll('#navList .nav-link'));
+    const idx = links.indexOf(link);
+    const prev = links[(idx - 1 + links.length) % links.length];
+    prev?.focus();
+  } else if (e.key === 'Home') {
+    e.preventDefault();
+    document.querySelector('#navList .nav-link')?.focus();
+  } else if (e.key === 'End') {
+    e.preventDefault();
+    const links = document.querySelectorAll('#navList .nav-link');
+    links[links.length - 1]?.focus();
+  }
+});
 
 /* Close flyouts if clicking on the shadow */
 sidebarShadow.addEventListener('click', () => {
