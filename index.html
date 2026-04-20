@@ -605,7 +605,7 @@
       transition: left var(--transition-smooth);
     }
 
-    body.sidebar-expanded .topbar { left: var(--sidebar-expanded); }
+    body.sidebar-pinned .topbar { left: var(--sidebar-expanded); }
 
     .topbar-breadcrumbs {
       display: flex;
@@ -646,7 +646,7 @@
       transition: margin-left var(--transition-smooth);
     }
 
-    body.sidebar-expanded .main-content { margin-left: var(--sidebar-expanded); }
+    body.sidebar-pinned .main-content { margin-left: var(--sidebar-expanded); }
 
     .main-content h1 {
       color: var(--gray-900);
@@ -1539,7 +1539,6 @@ accountToggle.addEventListener('click', toggleAccountDropdown);
 function expand() {
   clearTimeout(collapseTimer);
   sidebar.classList.add('expanded');
-  document.body.classList.add('sidebar-expanded');
   pinBtn.classList.add('can-show');
   // Restore flyouts to show where the user currently is
   restoreFlyoutsForActivePath();
@@ -1549,7 +1548,6 @@ function collapse() {
   if (isPinned) return;
   collapseTimer = setTimeout(() => {
     sidebar.classList.remove('expanded');
-    document.body.classList.remove('sidebar-expanded');
     pinBtn.classList.remove('can-show');
     closeFlyouts();
     closeAccountDropdown();
@@ -1571,6 +1569,7 @@ pinBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   isPinned = !isPinned;
   sidebar.classList.toggle('pinned', isPinned);
+  document.body.classList.toggle('sidebar-pinned', isPinned);
   pinBtn.title = isPinned ? 'Unpin sidebar' : 'Pin sidebar open';
   if (isPinned) {
     expand();
